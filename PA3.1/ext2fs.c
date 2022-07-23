@@ -12,6 +12,7 @@
 #ifndef FUSE_USE_VERSION
 #define FUSE_USE_VERSION 26
 #endif
+#define _FILE_OFFSET_BITS  64
 #include <fuse.h>
 
 static volume_t *volume;
@@ -36,7 +37,7 @@ static const struct fuse_operations ext2_operations = {
 
 int main(int argc, char *argv[]) {
   
-  char *volumefile = argv[--argc];
+  char  *volumefile = argv[--argc];
   volume = open_volume_file(volumefile);
   argv[argc] = NULL;
   

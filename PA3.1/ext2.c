@@ -26,24 +26,91 @@
      all fields initialized according to the data in the volume file,
      or NULL if the file is invalid or data is missing.
  */
+void *checkMalloc(int size){
+
+    void *ptr =      malloc(size);
+
+    if (ptr == NULL) {
+        perror("Malloc failed");
+    }
+
+    return ptr;
+}
+
 volume_t *open_volume_file(const char *filename) {
-  
-  int fd = open(filename, O_RDONLY);
-  if (fd == -1) return NULL;
 
-  struct stat vol_st;
-  if (fstat(fd, &vol_st) == -1) {
-    close(fd);
-    return NULL;
-  }
+    int fd = open(filename, O_RDONLY);
+    if (fd == -1) return NULL;
 
-  volume_t *volume = malloc(sizeof(volume_t));
-  volume->fd = fd;
-  volume->volume_size = vol_st.st_size;
-  
-  /* TO BE COMPLETED BY THE STUDENT */
+    struct stat vol_st;
 
-  return volume;
+    if (fstat(fd, &vol_st) == -1) {
+        close(fd);
+        return NULL;
+    }
+
+
+    volume_t *volume = checkMalloc(sizeof(volume_t) * 1);
+    superblock_t *superBlock = checkMalloc(sizeof(superblock_t) * 1);
+
+    volume->fd = fd;
+    volume->volume_size = vol_st.st_size;
+//    volume->block_size = vol_st.st_blksize;
+
+    if (volume->volume_size < EXT2_OFFSET_SUPERBLOCK * 2) {
+        free(superBlock);
+        return NULL;
+    }
+
+    //https://www.nongnu.org/ext2-doc/ext2.html
+
+    lseek(fd, EXT2_OFFSET_SUPERBLOCK, SEEK_SET);
+
+    if (read(fd, superBlock, sizeof(superblock_t) * 1) < 0) {
+        free(superBlock);
+        return NULL;
+    }
+
+//    printf("%d %ld\n", EXT2_SUPER_MAGIC, superBlock->s_magic);
+   if (EXT2_SUPER_MAGIC != superBlock->s_magic) {
+        free(superBlock);
+        return NULL;
+    }
+
+    volume->super = *superBlock;
+    volume->block_size = EXT2_OFFSET_SUPERBLOCK << superBlock->s_log_block_size;
+    volume->volume_size = superBlock->s_blocks_count * volume->block_size;
+    volume->num_groups = 1 + (superBlock->s_blocks_count - 1) / superBlock->s_blocks_per_group;
+
+    //  printf("block size: %d\n", volume->block_size);
+    //  printf("volume size: %d\n", volume->volume_size);
+    //  printf("num groups: %d\n", volume->num_groups);
+
+    group_desc_t *groupDescription = checkMalloc(sizeof(group_desc_t) * volume->num_groups);
+
+//    printf("%x %xq\n", volume->block_size, EXT2_OFFSET_SUPERBLOCK);
+//
+    if (volume->block_size != 1024)
+        lseek(fd, volume->block_size, SEEK_SET);
+    else
+        lseek(fd, volume->block_size * 2, SEEK_SET);
+
+    if (read(fd, groupDescription, sizeof(group_desc_t) * volume->num_groups) < 0) {
+        free(superBlock);
+        free(groupDescription);
+//        close_volume_file(volume);
+        return NULL;
+    }
+
+    volume->groups = groupDescription;
+//    printf("%d\n", volume->groups[0].bg_block_bitmap);
+//    printf("%d\n", groupDescription[0].bg_block_bitmap);
+
+    /* TO BE COMPLETED BY THE STUDENT */
+
+//    free(groupDescription);
+    free(superBlock);
+    return volume;
 }
 
 /* close_volume_file: Frees and closes all resources used by a EXT2 volume.
@@ -56,6 +123,7 @@ void close_volume_file(volume_t *volume) {
   close(volume->fd);
   free(volume->groups);
   free(volume);
+
 }
 
 /* read_block: Reads data from one or more blocks. Saves the resulting
@@ -77,6 +145,37 @@ void close_volume_file(volume_t *volume) {
  */
 ssize_t read_block(volume_t *volume, uint32_t block_no, uint32_t offset, uint32_t size, void *buffer) {
 
-  /* TO BE COMPLETED BY THE STUDENT */
-  return -1;
+    /* TO BE COMPLETED BY THE STUDENT */
+    if (block_no < 0) {
+        return -1;
+    }
+
+    if (block_no == 0) {
+        memset(buffer, 0, size);
+
+//        for (int i = 0; i < size; i++) {
+//            int c = 0;
+//            buffer[i] =  (void *)c;
+//        }
+
+        return 0;
+    }
+
+//    Return value of read_block() does not correspond to the number of bytes read
+//    from the volume. This may be smaller than the number of requested bytes if
+//    the file does not contain enough bytes for the specific request, or if the
+//    position is beyond the size of the volume file.. Expected 0, got 1.
+
+//    int condition = volume->block_size * block_no + offset + size;
+//    if (condition >= volume->volume_size ||
+//        volume->block_size * block_no >= volume->volume_size) {
+//        return 0;
+//    }
+
+    size_t readBuffer;
+    lseek(volume->fd, volume->block_size * block_no + offset, SEEK_SET);
+    readBuffer = read(volume->fd, buffer, size);
+
+    return readBuffer < 0 ? -1 : readBuffer;
+
 }
