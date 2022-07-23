@@ -71,6 +71,9 @@ typedef struct ext2volume {
   group_desc_t *groups;
 } volume_t;
 
+//            (superBlock->s_blocks_count + superBlock->s_blocks_per_group - 1)
+//                        / superBlock->s_blocks_per_group;
+
 typedef struct inode {
   uint16_t i_mode;        // Mode (type of file and permissions)
   uint16_t i_uid;         // Owner's user ID
