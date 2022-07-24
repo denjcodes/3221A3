@@ -105,7 +105,7 @@ int main(int argc, char *argv[]) {
   char content[128] = "<BUFFER NOT INITIALIZED>";
 
   printf("\n10 bytes at offset 17 of block 534:\n");
-  if (read_block(volume, 534, 17, 10, content) < 0) {
+  if (read_block(volume, EXT2_INVALID_BLOCK_NUMBER, 1024, 10, content) < 0) {
     printf("  NOT FOUND!!!\n");
   } else {
     printf("  >>>%.10s<<<\n", content);
@@ -201,6 +201,6 @@ int main(int argc, char *argv[]) {
 //  printf("\nFull list of files:\n");
 //  print_dir_entries_recursive(volume, "", EXT2_ROOT_INO, 0);
 
-//  close_volume_file(volume);
+  close_volume_file(volume);
   return 0;
 }
