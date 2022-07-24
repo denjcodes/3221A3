@@ -152,13 +152,7 @@ ssize_t read_block(volume_t *volume, uint32_t block_no, uint32_t offset, uint32_
 
     if (block_no == 0) {
         memset(buffer, 0, size);
-
-//        for (int i = 0; i < size; i++) {
-//            int c = 0;
-//            buffer[i] =  (void *)c;
-//        }
-
-        return 0;
+        return size;
     }
 
 //    Return value of read_block() does not correspond to the number of bytes read
