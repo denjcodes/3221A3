@@ -18,7 +18,7 @@
 /* open_volume_file: Opens the specified file and reads the initial
    EXT2 data contained in the file, including the boot sector, file
    allocation table and root directory.
-   
+
    Parameters:
      filename: Name of the file containing the volume data.
    Returns:
@@ -71,8 +71,7 @@ volume_t *open_volume_file(const char *filename) {
         return NULL;
     }
 
-//    printf("%d %ld\n", EXT2_SUPER_MAGIC, superBlock->s_magic);
-   if (EXT2_SUPER_MAGIC != superBlock->s_magic) {
+    if (EXT2_SUPER_MAGIC != superBlock->s_magic) {
         free(superBlock);
         return NULL;
     }
@@ -88,8 +87,6 @@ volume_t *open_volume_file(const char *filename) {
 
     group_desc_t *groupDescription = checkMalloc(sizeof(group_desc_t) * volume->num_groups);
 
-//    printf("%x %xq\n", volume->block_size, EXT2_OFFSET_SUPERBLOCK);
-//
     if (volume->block_size != 1024)
         lseek(fd, volume->block_size, SEEK_SET);
     else
@@ -98,13 +95,10 @@ volume_t *open_volume_file(const char *filename) {
     if (read(fd, groupDescription, sizeof(group_desc_t) * volume->num_groups) < 0) {
         free(superBlock);
         free(groupDescription);
-//        close_volume_file(volume);
         return NULL;
     }
 
     volume->groups = groupDescription;
-//    printf("%d\n", volume->groups[0].bg_block_bitmap);
-//    printf("%d\n", groupDescription[0].bg_block_bitmap);
 
     /* TO BE COMPLETED BY THE STUDENT */
 
@@ -114,15 +108,15 @@ volume_t *open_volume_file(const char *filename) {
 }
 
 /* close_volume_file: Frees and closes all resources used by a EXT2 volume.
-   
+
    Parameters:
      volume: pointer to volume to be freed.
  */
 void close_volume_file(volume_t *volume) {
 
-  close(volume->fd);
-  free(volume->groups);
-  free(volume);
+    close(volume->fd);
+    free(volume->groups);
+    free(volume);
 
 }
 
@@ -130,7 +124,7 @@ void close_volume_file(volume_t *volume) {
    data in buffer 'buffer'. This function also supports sparse data,
    where a block number equal to 0 sets the value of the corresponding
    buffer to all zeros without reading a block from the volume.
-   
+
    Parameters:
      volume: pointer to volume.
      block_no: Block number where start of data is located.
@@ -146,30 +140,19 @@ void close_volume_file(volume_t *volume) {
 ssize_t read_block(volume_t *volume, uint32_t block_no, uint32_t offset, uint32_t size, void *buffer) {
 
     /* TO BE COMPLETED BY THE STUDENT */
-    if (block_no < 0) {
-        return -1;
-    }
 
-    if (block_no == 0) {
-        memset(buffer, 0, size);
+    unsigned int actualOffset = volume->block_size * block_no + offset;
+
+    if (block_no == 0)  {
+        memset(buffer, 0, size); // <-- Better implementation
         return size;
     }
+    else if (actualOffset + size >= volume->volume_size) {
+        size = volume->volume_size - actualOffset;
+        if (size == 0) return 0;
+    }
 
-//    Return value of read_block() does not correspond to the number of bytes read
-//    from the volume. This may be smaller than the number of requested bytes if
-//    the file does not contain enough bytes for the specific request, or if the
-//    position is beyond the size of the volume file.. Expected 0, got 1.
-
-//    int condition = volume->block_size * block_no + offset + size;
-//    if (condition >= volume->volume_size ||
-//        volume->block_size * block_no >= volume->volume_size) {
-//        return 0;
-//    }
-
-    size_t readBuffer;
-    lseek(volume->fd, volume->block_size * block_no + offset, SEEK_SET);
-    readBuffer = read(volume->fd, buffer, size);
-
-    return readBuffer < 0 ? -1 : readBuffer;
-
+    lseek(volume->fd, actualOffset, SEEK_SET);
+    return (block_no == EXT2_INVALID_BLOCK_NUMBER) ?
+           -1 : read(volume->fd, buffer, size);
 }
