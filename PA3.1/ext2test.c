@@ -39,14 +39,14 @@ static void print_dir_entries(volume_t *volume, inode_t *inode) {
 
 static void print_dir_entries_recursive(volume_t *volume, const char *name,
                                         uint32_t dir_inode_no, unsigned int recursion_level) {
-  
+
   off_t offset = 0;
   dir_entry_t entry;
   int64_t child_inode_no;
   inode_t inode;
 
   if (!strcmp(".", name) || !strcmp("..", name)) return;
-  
+
   ssize_t read_rv = read_inode(volume, dir_inode_no, &inode);
   assert(read_rv > 0);
 
@@ -105,7 +105,7 @@ int main(int argc, char *argv[]) {
   char content[128] = "<BUFFER NOT INITIALIZED>";
 
   printf("\n10 bytes at offset 17 of block 534:\n");
-  if (read_block(volume, EXT2_INVALID_BLOCK_NUMBER, 1024, 10, content) < 0) {
+  if (read_block(volume, 534, 17, 10, content) < 0) {
     printf("  NOT FOUND!!!\n");
   } else {
     printf("  >>>%.10s<<<\n", content);
@@ -119,40 +119,41 @@ int main(int argc, char *argv[]) {
     print_inode_metadata(volume, inode_no, &inode);
     print_dir_entries(volume, &inode);
   }
+//  printf("%d", get_inode_block_no(volume, ));
 
-//  printf("\nDirectory d1 (from root inode):\n");
-//  if (!(inode_no = find_file_in_directory(volume, &inode, "d1", &entry))) {
-//    printf("  NOT FOUND (FILE)!!!\n");
-//  } else if (read_inode(volume, entry.de_inode_no, &inode) < 0) {
-//    printf("  NOT FOUND (INODE)!!!\n");
-//  } else {
-//    print_inode_metadata(volume, inode_no, &inode);
-//    print_dir_entries(volume, &inode);
-//  }
-//
-//  printf("\nRoot directory (via path):\n");
-//  if (!(inode_no = find_file_from_path(volume, "/", &inode))) {
-//    printf("  NOT FOUND!!!\n");
-//  } else {
-//    print_inode_metadata(volume, inode_no, &inode);
-//    print_dir_entries(volume, &inode);
-//  }
-//
-//  printf("\nDirectory d1 (via path):\n");
-//  if (!(inode_no = find_file_from_path(volume, "/d1", &inode))) {
-//    printf("  NOT FOUND!!!\n");
-//  } else {
-//    print_inode_metadata(volume, inode_no, &inode);
-//    print_dir_entries(volume, &inode);
-//  }
-//
-//  printf("\nDirectory d1/d2:\n");
-//  if (!(inode_no = find_file_from_path(volume, "/d1/d2", &inode))) {
-//    printf("  NOT FOUND!!!\n");
-//  } else {
-//    print_inode_metadata(volume, inode_no, &inode);
-//    print_dir_entries(volume, &inode);
-//  }
+  printf("\nDirectory d1 (from root inode):\n");
+  if (!(inode_no = find_file_in_directory(volume, &inode, "d1", &entry))) {
+    printf("  NOT FOUND (FILE)!!!\n");
+  } else if (read_inode(volume, entry.de_inode_no, &inode) < 0) {
+    printf("  NOT FOUND (INODE)!!!\n");
+  } else {
+    print_inode_metadata(volume, inode_no, &inode);
+    print_dir_entries(volume, &inode);
+  }
+
+  printf("\nRoot directory (via path):\n");
+  if (!(inode_no = find_file_from_path(volume, "/", &inode))) {
+    printf("  NOT FOUND!!!\n");
+  } else {
+    print_inode_metadata(volume, inode_no, &inode);
+    print_dir_entries(volume, &inode);
+  }
+
+  printf("\nDirectory d1 (via path):\n");
+  if (!(inode_no = find_file_from_path(volume, "/d1", &inode))) {
+    printf("  NOT FOUND!!!\n");
+  } else {
+    print_inode_metadata(volume, inode_no, &inode);
+    print_dir_entries(volume, &inode);
+  }
+
+  printf("\nDirectory d1/d2:\n");
+  if (!(inode_no = find_file_from_path(volume, "/d1/d2", &inode))) {
+    printf("  NOT FOUND!!!\n");
+  } else {
+    print_inode_metadata(volume, inode_no, &inode);
+    print_dir_entries(volume, &inode);
+  }
 //
 //  printf("\nDirectory d1/d2/d3/d4/d5:\n");
 //  if (!(inode_no = find_file_from_path(volume, "/d1/d2/d3/d4/d5", &inode))) {
@@ -161,30 +162,30 @@ int main(int argc, char *argv[]) {
 //    print_inode_metadata(volume, inode_no, &inode);
 //    print_dir_entries(volume, &inode);
 //  }
-//
-//  printf("\nFile termcap:\n");
-//  if (!(inode_no = find_file_from_path(volume, "/termcap", &inode))) {
-//    printf("  NOT FOUND!!!\n");
-//  } else {
-//    print_inode_metadata(volume, inode_no, &inode);
-//  }
-//
-//  printf("\nFile d1/File1.txt:\n");
-//  if (!(inode_no = find_file_from_path(volume, "/d1/File1.txt", &inode))) {
-//    printf("  NOT FOUND!!!\n");
-//  } else {
-//    print_inode_metadata(volume, inode_no, &inode);
-//    printf("  Content      : ");
-//    int rv = read_file_content(volume, &inode, 0, sizeof(content), content);
-//    printf("%.*s\n", rv, content);
-//  }
-//
-//  printf("\nFile d1/d2/sparse/Bigfile2.txt:\n");
-//  if (!(inode_no = find_file_from_path(volume, "/d1/d2/sparse/Bigfile2.txt", &inode))) {
-//    printf("  NOT FOUND!!!\n");
-//  } else {
-//    print_inode_metadata(volume, inode_no, &inode);
-//  }
+
+  printf("\nFile termcap:\n");
+  if (!(inode_no = find_file_from_path(volume, "/termcap", &inode))) {
+    printf("  NOT FOUND!!!\n");
+  } else {
+    print_inode_metadata(volume, inode_no, &inode);
+  }
+
+  printf("\nFile d1/File1.txt:\n");
+  if (!(inode_no = find_file_from_path(volume, "/d1/File1.txt", &inode))) {
+    printf("  NOT FOUND!!!\n");
+  } else {
+    print_inode_metadata(volume, inode_no, &inode);
+    printf("  Content      : ");
+    int rv = read_file_content(volume, &inode, 0, sizeof(content), content);
+    printf("%.*s\n", rv, content);
+  }
+
+  printf("\nFile d1/d2/sparse/Bigfile2.txt:\n");
+  if (!(inode_no = find_file_from_path(volume, "/d1/d2/sparse/Bigfile2.txt", &inode))) {
+    printf("  NOT FOUND!!!\n");
+  } else {
+    print_inode_metadata(volume, inode_no, &inode);
+  }
 //
 //  printf("\nSymlink ImageInst.txt:\n");
 //  if (!(inode_no = find_file_from_path(volume, "/ImageInst.txt", &inode))) {

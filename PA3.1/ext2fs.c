@@ -87,8 +87,34 @@ static void ext2_destroy(void *private_data) {
 static int ext2_getattr(const char *path, struct stat *stbuf) {
   
   /* TO BE COMPLETED BY THE STUDENT */
-  return -ENOSYS;
+
+  // man 2 fstat >> fstat.txt
+  inode_t *sourceInode = malloc(sizeof(inode_t));
+  uint32_t iNodeNumber = find_file_from_path(volume, path, sourceInode);
+
+  if (iNodeNumber > 2) {
+      //stbuf->st_dev
+      stbuf->st_ino = iNodeNumber;
+      stbuf->st_mode = sourceInode->i_mode;
+      stbuf->st_nlink = sourceInode->i_links_count;
+      stbuf->st_uid = sourceInode->i_uid;
+      stbuf->st_gid = sourceInode->i_gid;
+      stbuf->st_size = sourceInode->i_size;
+      stbuf->st_blksize = volume->block_size;
+      stbuf->st_blocks = sourceInode->i_blocks;
+
+      stbuf->st_atime = sourceInode->i_atime;
+      stbuf->st_mtime = sourceInode->i_mtime;
+      stbuf->st_ctime = sourceInode->i_ctime;
+      free(sourceInode);
+      return 0;
+  }
+
+  free(sourceInode);
+  return -ENOENT;
 }
+
+
 
 /* ext2_readdir: Function called when a process requests the listing
    of a directory.
@@ -119,7 +145,18 @@ static int ext2_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
                          off_t offset, struct fuse_file_info *fi) {
   
   /* TO BE COMPLETED BY THE STUDENT */
-  return -ENOSYS;
+  inode_t *sourceInode = malloc(sizeof(inode_t));
+  uint32_t iNodeNumber = find_file_from_path(volume, path, sourceInode);
+//    int64_t next_directory_entry(volume_t *volume, inode_t *dir_inode,
+//                                 off_t *offset, dir_entry_t *dir_entry) {
+  dir_entry_t nextDirectory;
+  read_inode(volume, iNodeNumber, sourceInode);
+
+  next_directory_entry(volume, sourceInode, 0, &nextDirectory);
+  filler(buf, nextDirectory.de_name, NULL, 0);
+
+  free(sourceInode);
+  return -ENOENT;
 }
 
 /* ext2_read: Function called when a process reads data from a file in
@@ -147,9 +184,21 @@ static int ext2_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
  */
 static int ext2_read(const char *path, char *buf, size_t size, off_t offset,
 		      struct fuse_file_info *fi) {
+
+    inode_t *sourceInode = malloc(sizeof(inode_t));
+    uint32_t iNodeNumber = find_file_from_path(volume, path, sourceInode);
+    int value = -EIO;
+
+    if ((sourceInode->i_mode >> 12) == 4) value = -EISDIR;
+    if (iNodeNumber == 0) value = -ENOENT;
+
+    int readBytes = read_file_content(volume, sourceInode, offset, size, buf);
+    if (readBytes) return readBytes;
+
+    free(sourceInode);
   
   /* TO BE COMPLETED BY THE STUDENT */
-  return -ENOSYS;
+  return value;
 }
 
 /* ext2_readlink: Function called when FUSE needs to obtain the target of
@@ -170,7 +219,7 @@ static int ext2_read(const char *path, char *buf, size_t size, off_t offset,
        -EIO: If there was an I/O error trying to obtain the data.
  */
 static int ext2_readlink(const char *path, char *buf, size_t size) {
-  
-  /* TO BE COMPLETED BY THE STUDENT */
-  return -ENOSYS;
+
+
+  return -ENOENT;
 }

@@ -71,8 +71,6 @@ typedef struct ext2volume {
   group_desc_t *groups;
 } volume_t;
 
-//            (superBlock->s_blocks_count + superBlock->s_blocks_per_group - 1)
-//                        / superBlock->s_blocks_per_group;
 
 typedef struct inode {
   uint16_t i_mode;        // Mode (type of file and permissions)
@@ -106,7 +104,7 @@ typedef struct inode {
       uint8_t  l_i_frag;      // Linux only: fragment number (deprecated)
       uint8_t  l_i_fsize;     // Linux only: fragment size (deprecated)
       uint16_t l_i_reserved;  // Reserved for future use
-      uint16_t l_i_uid_high;  // Linux only: high 16 bits of owner's user ID
+      uint16_t l_i_uid_high;  // LinuxFi only: high 16 bits of owner's user ID
       uint16_t l_i_gid_high;  // Linux only: high 16 bits of owner's group ID
       uint32_t l_i_reserved2; // Reserved for future use
     };

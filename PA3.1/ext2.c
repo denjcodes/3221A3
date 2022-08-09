@@ -71,8 +71,7 @@ volume_t *open_volume_file(const char *filename) {
         return NULL;
     }
 
-//    printf("%d %ld\n", EXT2_SUPER_MAGIC, superBlock->s_magic);
-   if (EXT2_SUPER_MAGIC != superBlock->s_magic) {
+    if (EXT2_SUPER_MAGIC != superBlock->s_magic) {
         free(superBlock);
         return NULL;
     }
@@ -88,8 +87,6 @@ volume_t *open_volume_file(const char *filename) {
 
     group_desc_t *groupDescription = checkMalloc(sizeof(group_desc_t) * volume->num_groups);
 
-//    printf("%x %xq\n", volume->block_size, EXT2_OFFSET_SUPERBLOCK);
-//
     if (volume->block_size != 1024)
         lseek(fd, volume->block_size, SEEK_SET);
     else
@@ -98,13 +95,10 @@ volume_t *open_volume_file(const char *filename) {
     if (read(fd, groupDescription, sizeof(group_desc_t) * volume->num_groups) < 0) {
         free(superBlock);
         free(groupDescription);
-//        close_volume_file(volume);
         return NULL;
     }
 
     volume->groups = groupDescription;
-//    printf("%d\n", volume->groups[0].bg_block_bitmap);
-//    printf("%d\n", groupDescription[0].bg_block_bitmap);
 
     /* TO BE COMPLETED BY THE STUDENT */
 
@@ -120,9 +114,9 @@ volume_t *open_volume_file(const char *filename) {
  */
 void close_volume_file(volume_t *volume) {
 
-  close(volume->fd);
-  free(volume->groups);
-  free(volume);
+    close(volume->fd);
+    free(volume->groups);
+    free(volume);
 
 }
 
@@ -150,17 +144,15 @@ ssize_t read_block(volume_t *volume, uint32_t block_no, uint32_t offset, uint32_
     unsigned int actualOffset = volume->block_size * block_no + offset;
 
     if (block_no == 0)  {
-//        for (int i =0; i < size; i++) {
-//            ((char *)buffer)[i] = 0;
-//        }
         memset(buffer, 0, size); // <-- Better implementation
         return size;
     }
     else if (actualOffset + size >= volume->volume_size) {
-        size -= (actualOffset + size) - volume->volume_size;
-        if (size < 0) return -1;
+        size = volume->volume_size - actualOffset;
+        if (size == 0) return 0;
     }
 
     lseek(volume->fd, actualOffset, SEEK_SET);
-    return (block_no == EXT2_INVALID_BLOCK_NUMBER) ? -1 : read(volume->fd, buffer, size);
+    return (block_no == EXT2_INVALID_BLOCK_NUMBER) ?
+           -1 : read(volume->fd, buffer, size);
 }
