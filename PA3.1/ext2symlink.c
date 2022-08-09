@@ -24,19 +24,25 @@
  */
 int32_t read_symlink_target(volume_t *volume, inode_t *inode, char *buffer, size_t size) {
 
-    if (!inode_is_symlink(inode)) return 0;
-
-    char stringBuffer[size];
-    strncpy(stringBuffer, buffer, size - 1);
-    stringBuffer[size - 1] = '\0';
-
-    if (inode_file_size(volume, inode) < 60)
-        if (read_file_content(volume, inode, 0, size, buffer) > 0)
-            return strlen(buffer);
-    else
-        if (read_file_content(volume, inode, 0, size, stringBuffer) > 0)
-            return strlen(stringBuffer);
-
+  if (!inode_is_symlink(inode))
     return 0;
-}
 
+  int readBytes = read_file_content(volume, inode, 0, size, buffer);
+  printf("%s\n", inode->i_symlink_target);
+
+//  uint32_t inode_no;
+//  int stringLength = strlen(inode->i_symlink_target);
+//
+//  if (stringLength < 60) {
+//      if(!(inode_no = find_file_from_path(volume, inode->i_symlink_target, inode)))
+//        return 0;
+//  }
+//  else
+//  {
+//      buffer[size] = '\0';
+//      return stringLength;
+//  }
+
+  /* TO BE COMPLETED BY THE STUDENT */
+  return 0;
+}

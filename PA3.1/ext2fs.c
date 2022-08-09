@@ -20,52 +20,54 @@ static volume_t *volume;
 static void *ext2_init(struct fuse_conn_info *conn);
 static void ext2_destroy(void *private_data);
 static int ext2_getattr(const char *path, struct stat *stbuf);
-static int ext2_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi);
-static int ext2_read(const char *path, char *buf, size_t size, off_t offset,struct fuse_file_info *fi);
+static int ext2_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
+			off_t offset, struct fuse_file_info *fi);
+static int ext2_read(const char *path, char *buf, size_t size, off_t offset,
+		     struct fuse_file_info *fi);
 static int ext2_readlink(const char *path, char *buf, size_t size);
 
 static const struct fuse_operations ext2_operations = {
-        .init       = ext2_init,
-        .destroy    = ext2_destroy,
-        .read       = ext2_read,
-        .getattr    = ext2_getattr,
-        .readdir    = ext2_readdir,
-        .readlink   = ext2_readlink,
+  .init = ext2_init,
+  .destroy = ext2_destroy,
+  .read = ext2_read,
+  .getattr = ext2_getattr,
+  .readdir = ext2_readdir,
+  .readlink = ext2_readlink,
 };
 
 int main(int argc, char *argv[]) {
-
-    char  *volumefile = argv[--argc];
-    volume = open_volume_file(volumefile);
-    argv[argc] = NULL;
-
-    if (!volume) {
-        fprintf(stderr, "Invalid volume file: '%s'.\n", volumefile);
-        exit(1);
-    }
-
-    fuse_main(argc, argv, &ext2_operations, volume);
-
-    return 0;
+  
+  char  *volumefile = argv[--argc];
+  volume = open_volume_file(volumefile);
+  argv[argc] = NULL;
+  
+  if (!volume) {
+    fprintf(stderr, "Invalid volume file: '%s'.\n", volumefile);
+    exit(1);
+  }
+  
+  fuse_main(argc, argv, &ext2_operations, volume);
+  
+  return 0;
 }
 
 /* ext2_init: Function called when the FUSE file system is mounted.
  */
 static void *ext2_init(struct fuse_conn_info *conn) {
-
-    printf("init()\n");
-
-    return NULL;
+  
+  printf("init()\n");
+  
+  return NULL;
 }
 
 /* ext2_destroy: Function called before the FUSE file system is
    unmounted.
  */
 static void ext2_destroy(void *private_data) {
-
-    printf("destroy()\n");
-
-    close_volume_file(volume);
+  
+  printf("destroy()\n");
+  
+  close_volume_file(volume);
 }
 
 /* ext2_getattr: Function called when a process requests the metadata
@@ -73,7 +75,7 @@ static void ext2_destroy(void *private_data) {
    creation/modification dates, among others (check man 2
    fstat). Typically FUSE will call this function before most other
    operations, for the file and all the components of the path.
-
+   
    Parameters:
      path: Path of the file whose metadata is requested.
      stbuf: Pointer to a struct stat where metadata must be stored.
@@ -83,41 +85,40 @@ static void ext2_destroy(void *private_data) {
      return -ENOENT.
  */
 static int ext2_getattr(const char *path, struct stat *stbuf) {
+  
+  /* TO BE COMPLETED BY THE STUDENT */
 
-    /* TO BE COMPLETED BY THE STUDENT */
+  // man 2 fstat >> fstat.txt
+  inode_t *sourceInode = malloc(sizeof(inode_t));
+  uint32_t iNodeNumber = find_file_from_path(volume, path, sourceInode);
 
-    // man 2 fstat >> fstat.txt
-    inode_t *sourceInode = malloc(sizeof(inode_t));
-    uint32_t iNodeNumber = find_file_from_path(volume, path, sourceInode);
+  if (iNodeNumber > 2) {
+      //stbuf->st_dev
+      stbuf->st_ino = iNodeNumber;
+      stbuf->st_mode = sourceInode->i_mode;
+      stbuf->st_nlink = sourceInode->i_links_count;
+      stbuf->st_uid = sourceInode->i_uid;
+      stbuf->st_gid = sourceInode->i_gid;
+      stbuf->st_size = sourceInode->i_size;
+      stbuf->st_blksize = volume->block_size;
+      stbuf->st_blocks = sourceInode->i_blocks;
 
-    if (iNodeNumber < 1) return -ENOENT;
+      stbuf->st_atime = sourceInode->i_atime;
+      stbuf->st_mtime = sourceInode->i_mtime;
+      stbuf->st_ctime = sourceInode->i_ctime;
+      free(sourceInode);
+      return 0;
+  }
 
-    //stbuf->st_dev
-    stbuf->st_ino       = iNodeNumber;
-    stbuf->st_mode      = sourceInode->i_mode;
-    stbuf->st_nlink     = sourceInode->i_links_count;
-    stbuf->st_uid       = sourceInode->l_i_uid_high << 16 | sourceInode->i_uid;
-    stbuf->st_gid       = sourceInode->l_i_gid_high << 16 | sourceInode->i_gid;
-    stbuf->st_size      = inode_file_size(volume, sourceInode);
-    stbuf->st_blksize   = volume->block_size;
-    stbuf->st_blocks    = sourceInode->i_blocks;
-
-    stbuf->st_atime     = sourceInode->i_atime;
-    stbuf->st_mtime     = sourceInode->i_mtime;
-    stbuf->st_ctime     = sourceInode->i_ctime;
-    free(sourceInode);
-
-    return 0;
+  free(sourceInode);
+  return -ENOENT;
 }
 
-int freeDouble(dir_entry_t *nextDirectory, inode_t *sourceInode, int value) {
-    free(nextDirectory); free(sourceInode);
-    return value;
-}
+
 
 /* ext2_readdir: Function called when a process requests the listing
    of a directory.
-
+   
    Parameters:
      path: Path of the directory whose listing is requested.
      buf: Pointer that must be passed as first parameter to filler
@@ -141,28 +142,21 @@ int freeDouble(dir_entry_t *nextDirectory, inode_t *sourceInode, int value) {
      exist, returns -ENOENT.
  */
 static int ext2_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
-                        off_t offset, struct fuse_file_info *fi) {
+                         off_t offset, struct fuse_file_info *fi) {
+  
+  /* TO BE COMPLETED BY THE STUDENT */
+  inode_t *sourceInode = malloc(sizeof(inode_t));
+  uint32_t iNodeNumber = find_file_from_path(volume, path, sourceInode);
+//    int64_t next_directory_entry(volume_t *volume, inode_t *dir_inode,
+//                                 off_t *offset, dir_entry_t *dir_entry) {
+  dir_entry_t nextDirectory;
+  read_inode(volume, iNodeNumber, sourceInode);
 
-    inode_t *sourceInode = malloc(sizeof(inode_t));
-    uint32_t iNodeNumber = find_file_from_path(volume, path, sourceInode);
-    dir_entry_t *nextDirectory = malloc(sizeof(dir_entry_t));
-    int directoryInodeNumber;
-    int fillerOffset = 0;
+  next_directory_entry(volume, sourceInode, 0, &nextDirectory);
+  filler(buf, nextDirectory.de_name, NULL, 0);
 
-    if (iNodeNumber) {
-        directoryInodeNumber = next_directory_entry(volume, sourceInode, &offset, nextDirectory);
-        if (directoryInodeNumber <= 0) freeDouble(nextDirectory, sourceInode, -ENOTDIR);
-
-        while (directoryInodeNumber > 0) {
-            filler(buf, nextDirectory->de_name, NULL, fillerOffset);
-            directoryInodeNumber = next_directory_entry(volume, sourceInode, &offset, nextDirectory);
-            if (directoryInodeNumber <= 0) freeDouble(nextDirectory, sourceInode, -ENOTDIR);
-        }
-
-        freeDouble(nextDirectory, sourceInode, 0);
-    }
-
-    freeDouble(nextDirectory, sourceInode, -ENOENT);
+  free(sourceInode);
+  return -ENOENT;
 }
 
 /* ext2_read: Function called when a process reads data from a file in
@@ -170,7 +164,7 @@ static int ext2_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
    bytes from the file, starting at offset 'offset'. It may store less
    than 'size' bytes only in case of error or if the file is smaller
    than size+offset.
-
+   
    Parameters:
      path: Path of the open file.
      buf: Pointer where data is expected to be stored.
@@ -189,30 +183,29 @@ static int ext2_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
        -EIO: If there was an I/O error trying to obtain the data.
  */
 static int ext2_read(const char *path, char *buf, size_t size, off_t offset,
-                     struct fuse_file_info *fi) {
+		      struct fuse_file_info *fi) {
 
     inode_t *sourceInode = malloc(sizeof(inode_t));
     uint32_t iNodeNumber = find_file_from_path(volume, path, sourceInode);
+    int value = -EIO;
 
-
-    if ((sourceInode->i_mode >> 12) == 4) return -EISDIR;
-    if (iNodeNumber == 0) return -ENOENT;
-
+    if ((sourceInode->i_mode >> 12) == 4) value = -EISDIR;
+    if (iNodeNumber == 0) value = -ENOENT;
 
     int readBytes = read_file_content(volume, sourceInode, offset, size, buf);
-    if (readBytes == 0) return -1;
+    if (readBytes) return readBytes;
 
     free(sourceInode);
-
-    /* TO BE COMPLETED BY THE STUDENT */
-    return -EIO;
+  
+  /* TO BE COMPLETED BY THE STUDENT */
+  return value;
 }
 
 /* ext2_readlink: Function called when FUSE needs to obtain the target of
    a symbolic link. The target is stored in buffer 'buf', which stores
    up to 'size' bytes, as a NULL-terminated string. If the target is
    too long to fit in the buffer, the target should be truncated.
-
+   
    Parameters:
      path: Path of the symbolic link file.
      buf: Pointer where symbolic link target is expected to be stored.
@@ -227,23 +220,6 @@ static int ext2_read(const char *path, char *buf, size_t size, off_t offset,
  */
 static int ext2_readlink(const char *path, char *buf, size_t size) {
 
-    inode_t *sourceInode = malloc(sizeof(inode_t));
-    uint32_t iNodeNumber = find_file_from_path(volume, path, sourceInode);
 
-    if (!inode_is_symlink(sourceInode)) return -EINVAL;
-
-    if (strcmp(buf, "") == 0) return -EIO;
-
-    int stringSize = strlen(sourceInode->i_symlink_target) >= size ? size - 1 : size;
-    char stringBuffer[stringSize];
-
-    strcpy(stringBuffer, buf);
-    stringBuffer[stringSize] = '\0';
-
-//    Assertion 'correct_buffer == buffer' failed: correct_buffer == "", buffer == ""
-
-    int32_t symRetValue = read_symlink_target(volume, sourceInode, buf, stringSize);
-    if (symRetValue >= 0) return 0;
-
-    return -ENOENT;
+  return -ENOENT;
 }
