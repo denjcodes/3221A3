@@ -86,13 +86,13 @@ typedef struct inode {
   uint32_t i_flags;       // Flags
   uint32_t i_osd1;        // OS-dependant value
   union {
+    char i_symlink_target[60]; // Symbolic link target, if smaller than or equal to 60 bytes
     struct {
       uint32_t i_block[12];   // Direct block numbers
       uint32_t i_block_1ind;  // 1-indirect block number
       uint32_t i_block_2ind;  // 2-indirect block number
       uint32_t i_block_3ind;  // 3-indirect block number
     };
-    char i_symlink_target[60]; // Symbolic link target, if smaller than or equal to 60 bytes
   };
   uint32_t i_generation;  // File version (used for NFS)
   uint32_t i_file_acl;    // Block number for extended attributes

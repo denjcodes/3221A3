@@ -144,6 +144,9 @@ ssize_t read_block(volume_t *volume, uint32_t block_no, uint32_t offset, uint32_
     unsigned int actualOffset = volume->block_size * block_no + offset;
 
     if (block_no == 0)  {
+        for (int i = 0; i < size; i++)
+            ((char *)buffer)[i] = 0;
+
         memset(buffer, 0, size); // <-- Better implementation
         return size;
     }

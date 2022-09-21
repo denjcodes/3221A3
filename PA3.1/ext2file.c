@@ -128,21 +128,18 @@ uint32_t get_inode_block_no (volume_t *volume, inode_t *inode, uint64_t block_id
      In case of success, returns the number of bytes read from the
      disk. In case of error, returns -1.
  */
-ssize_t read_file_block (volume_t *volume, inode_t *inode, uint64_t offset, uint64_t max_size, void *buffer) {
+ssize_t read_file_block(volume_t *volume, inode_t *inode, uint64_t offset, uint64_t max_size, void *buffer) {
 
     uint64_t blockNumber = get_inode_block_no(volume, inode, offset / volume->block_size);
     uint64_t actualOffset = offset % volume->block_size;
     uint64_t fileLimit = inode_file_size(volume, inode);
 
-    if (offset + max_size > fileLimit) {
-        max_size = offset - fileLimit;
+    if (offset >= fileLimit) max_size = 0;
 
-        if (offset + max_size > volume->block_size)
-            max_size = volume->block_size - max_size;
-    }
+    if (offset + max_size >= fileLimit) max_size = fileLimit - offset;
 
+    if (actualOffset + max_size >= volume->block_size) max_size = volume->block_size - actualOffset;
 
-//    if (actualOffset + max_size == inode_file_size(volume, inode)) return 0;
     return read_block(volume, blockNumber, actualOffset, max_size, buffer);
 }
 
