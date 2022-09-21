@@ -33,7 +33,7 @@ static void print_dir_entries(volume_t *volume, inode_t *inode) {
   dir_entry_t entry;
   int64_t inode_no;
   printf("  Entries:\n");
-  while ((inode_no = next_directory_entry(volume, inode, &offset, &entry)) > 0)
+  while ((inode_no = next_directory_entry(volume, inode, &offset, &entry)))
     printf("    %#8" PRIx32 ": %s\n", entry.de_inode_no, entry.de_name);
 }
 
